@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WEBLK</title>
+    <style>
+        /* Estilos aquí */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mi Blog Avanzado</h1>
+
+        <!-- Barra de búsqueda -->
+        <input type="text" id="search" placeholder="Buscar...">
+        <button onclick="searchPosts()">Buscar</button>
+
+        <!-- Formulario de inicio de sesión -->
+        <div id="login-form">
+            <h2>Iniciar Sesión</h2>
+            <input type="password" id="password" placeholder="Contraseña">
+            <button onclick="login()">Ingresar</button>
+        </div>
+
+        <!-- Formulario para agregar publicaciones (visible solo después del inicio de sesión) -->
+        <div id="post-form" style="display: none;">
+            <h2>Escribir una Nueva Publicación</h2>
+            <input type="text" id="post-title" placeholder="Título">
+            <textarea id="post-content" placeholder="Contenido"></textarea>
+            <button onclick="createPost()">Publicar</button>
+        </div>
+
+        <!-- Contenedor de publicaciones -->
+        <div id="posts">
+            <!-- Las publicaciones se mostrarán aquí -->
+        </div>
+
+        <!-- Comentarios en las publicaciones -->
+        <div id="comments" style="display: none;">
+            <h2>Comentarios</h2>
+            <textarea id="comment-text" placeholder="Escribe un comentario"></textarea>
+            <button onclick="addComment()">Agregar Comentario</button>
+        </div>
+
+        <!-- Sistema de Mensajes Privados -->
+        <div id="private-messages" style="display: none;">
+            <h2>Mensajes Privados</h2>
+            <textarea id="private-message-text" placeholder="Escribe un mensaje privado"></textarea>
+            <button onclick="sendPrivateMessage()">Enviar Mensaje Privado</button>
+        </div>
+    </div>
+
+    <script>
+        // Contraseña para la autenticación
+        const password = "1234"; // Reemplaza "1234" con tu contraseña
+
+        // Array para almacenar las publicaciones y los comentarios
+        let posts = [];
+        let comments = [];
+
+        // Función para iniciar sesión
+        function login() {
+            const enteredPassword = document.getElementById("password").value;
+            if (enteredPassword === password) {
+                // Mostrar el formulario de publicación y otras funcionalidades si la contraseña es correcta
+                document.getElementById("login-form").style.display = "none";
+                document.getElementById("post-form").style.display = "block";
+                document.getElementById("comments").style.display = "block";
+                document.getElementById("private-messages").style.display = "block";
+
+                // Recuperar las publicaciones y comentarios guardados
+                if (localStorage.getItem("posts")) {
+                    posts = JSON.parse(localStorage.getItem("posts"));
+                }
+                if (localStorage.getItem("comments")) {
+                    comments = JSON.parse(localStorage.getItem("comments"));
+                }
+
+                // Mostrar las publicaciones
+                displayPosts();
+            } else {
+                alert("Contraseña incorrecta. Inténtalo de nuevo.");
+            }
+        }
+
+        // Función para guardar las publicaciones y comentarios en el almacenamiento local
+        function saveDataLocally() {
+            localStorage.setItem("posts", JSON.stringify(posts));
+            localStorage.setItem("comments", JSON.stringify(comments));
+        }
+
+        // Función para crear y mostrar una nueva publicación
+        function createPost() {
+            const title = document.getElementById("post-title").value;
+            const content = document.getElementById("post-content").value;
+
+            if (title && content) {
+                const post = {
+                    title: title,
+                    content: content
+                };
+
+                posts.push(post);
+                displayPosts();
+                document.getElementById("post-title").value = "";
+                document.getElementById("post-content").value = "";
+                saveDataLocally(); // Guardar los datos después de agregar una publicación
+            }
+        }
+
+        // Función para mostrar las publicaciones
+        function displayPosts() {
+            const postsContainer = document.getElementById("posts");
+            postsContainer.innerHTML = "";
+
+            for (let i = 0; i < posts.length; i++) {
+                const post = posts[i];
+                const postDiv = document.createElement("div");
+                postDiv.classList.add("post");
+                postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p><button onclick="showComments(${i})">Ver Comentarios</button>`;
+                postsContainer.appendChild(postDiv);
+            }
+        }
+
+        // Función para mostrar los comentarios de una publicación
+        function showComments(postIndex) {
+            const commentsContainer = document.getElementById("comments");
+            commentsContainer.innerHTML = `<h2>Comentarios en "${posts[postIndex].title}"</h2>`;
+            
+            for (let i = 0; i < comments.length; i++) {
+                const comment = comments[i];
+                if (comment.postIndex === postIndex) {
+                    const commentDiv = document.createElement("div");
+                    commentDiv.classList.add("comment");
+                    commentDiv.innerText = comment.text;
+                    commentsContainer.appendChild(commentDiv);
+                }
+            }
+            saveDataLocally(); // Guardar los datos después de mostrar los comentarios
+        }
+
+        // Función para agregar un comentario a una publicación
+        function addComment() {
+            const commentText = document.getElementById("comment-text").value;
+            const postIndex = document.querySelector("#comments h2").textContent.match(/"([^"]+)"/);
+            if (postIndex && commentText) {
+                const comment = {
+                    text: commentText,
+                    postIndex: posts.findIndex(post => post.title === postIndex[1])
+                };
+
+                comments.push(comment);
+                showComments(comment.postIndex);
+                document.getElementById("comment-text").value = "";
+                saveDataLocally(); // Guardar los datos después de agregar un comentario
+            }
+        }
+
+        // Función para buscar publicaciones
+        function searchPosts() {
+            const searchTerm = document.getElementById("search").value.toLowerCase();
+            const matchingPosts = posts.filter(post => {
+                return post.title.toLowerCase().includes(searchTerm) || post.content.toLowerCase().includes(searchTerm);
+            });
+
+            const postsContainer = document.getElementById("posts");
+            postsContainer.innerHTML = "";
+
+            for (let i = 0; i < matchingPosts.length; i++) {
+                const post = matchingPosts[i];
+                const postDiv = document.createElement("div");
+                postDiv.classList.add("post");
+                postDiv.innerHTML = `<h2>${post.title}</h2><p>${post.content}</p><button onclick="showComments(${i})">Ver Comentarios</button>`;
+                postsContainer.appendChild(postDiv);
+            }
+        }
+
+        // Funciones para el sistema de mensajes privados (puedes implementar esto usando un servidor backend)
+        function sendPrivateMessage() {
+            // Implementa la lógica para enviar mensajes privados aquí
+        }
+    </script>
+</body>
+</
